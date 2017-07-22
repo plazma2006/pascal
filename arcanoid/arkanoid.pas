@@ -20,12 +20,26 @@ type
     end;
 
 var
-  Gd,Gm,ErrCode,MaxX, MaxY : integer;
-  ballstep : integer;
-  b : ball;
-  platf : platform;
-  ch : Char;
-  keycode : Byte;
+    Gd,Gm,ErrCode,MaxX, MaxY : integer;
+    ballstep : integer;
+    b : ball;
+    platf : platform;
+    // ch : Char;
+    keycode : Byte;
+    bitmap:pointer;
+    size:longint; 
+
+procedure LoadBMP();
+var
+    f : file;
+begin
+   {$I-} Assign(f,'ball.bmp'); Reset(f,1); {$I+}
+   if (IOResult <> 0) then Exit; 
+   size:=FileSize(f);
+   GetMem(bitmap,size);
+   BlockRead(f,bitmap^,size);
+   Close(f);
+end;
 
 procedure DrawPlatform(var pl : platform; color : Byte);
 begin
@@ -42,15 +56,16 @@ begin
     LineRel(0, pl.h);
     LineRel(-pl.w, 0);
 
-    { if (bl.x+bl.r >= MaxX) or (bl.x-bl.r <= 0) then bl.dx := bl.dx * (-1);
-    if (bl.y+bl.r >= MaxY) or (bl.y-bl.r <= 0) then bl.dy := bl.dy * (-1); }
 end;
 
 procedure MovePlatform(var pl : platform; xmove : Shortint);
 begin
 
-    DrawPlatform(pl, 0);
-    pl.x := pl.x + xmove;
+    if (pl.x+xmove >= 0) and (pl.x+pl.w+xmove <= MaxX) then 
+        begin
+            DrawPlatform(pl, 0);
+            pl.x := pl.x + xmove;
+        end;
         
 end;
 
@@ -107,9 +122,13 @@ begin
             platf.x := trunc(MaxX/2-platf.w/2);
             platf.y := trunc(MaxY-platf.gap);
 
+            LoadBMP();
+            PutImage(0,0,bitmap^,XorPut);
+
             repeat
 
-            	 delay(10);
+
+            	 delay(30);
 
                 if keypressed then keycode := ord(ReadKey) else keycode := 0;
 
@@ -122,4 +141,6 @@ begin
 	        CloseGraph;
         end
      else Writeln('Graphics error:', GraphErrorMsg(ErrCode));
+
+     FreeMem(bitmap);
 end.
