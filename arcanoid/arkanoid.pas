@@ -1,7 +1,7 @@
 program arkanoid;
 
 uses
-  Crt, Graph;
+  winCrt, Graph;
 
 type
     point = record
@@ -26,20 +26,6 @@ var
     platf : platform;
     // ch : Char;
     keycode : Byte;
-    bitmap:pointer;
-    size:longint; 
-
-procedure LoadBMP();
-var
-    f : file;
-begin
-   {$I-} Assign(f,'ball.bmp'); Reset(f,1); {$I+}
-   if (IOResult <> 0) then Exit; 
-   size:=FileSize(f);
-   GetMem(bitmap,size);
-   BlockRead(f,bitmap^,size);
-   Close(f);
-end;
 
 procedure DrawPlatform(var pl : platform; color : Byte);
 begin
@@ -122,9 +108,6 @@ begin
             platf.x := trunc(MaxX/2-platf.w/2);
             platf.y := trunc(MaxY-platf.gap);
 
-            LoadBMP();
-            PutImage(0,0,bitmap^,XorPut);
-
             repeat
 
 
@@ -142,5 +125,4 @@ begin
         end
      else Writeln('Graphics error:', GraphErrorMsg(ErrCode));
 
-     FreeMem(bitmap);
 end.
