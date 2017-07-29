@@ -1,7 +1,7 @@
 program arkanoid;
 
 uses
-  winCrt, Graph;
+  winCrt, wingraph;
 
 type
     point = record
@@ -15,8 +15,14 @@ type
     platform = record
         x, y : SmallInt;
         dx : Shortint;
-        color, gap : Byte;
+        color, gap : Byte; 
         w, h : Word;
+    end;
+    block = record
+        x, y : Smallint;
+        color : longword;
+        w, h : Word
+
     end;
 
 var
@@ -24,6 +30,7 @@ var
     ballstep : integer;
     b : ball;
     platf : platform;
+    bl : block;
     // ch : Char;
     keycode : Byte;
 
@@ -43,6 +50,19 @@ begin
     LineRel(-pl.w, 0);
 
 end;
+
+procedure Drawblock(var bl : block);
+begin
+
+    setcolor(bl.color);
+    MoveTo(bl.x, bl.y);
+    LineRel(0, -bl.h);
+    LineRel(bl.w ,0);
+    LineRel(0, bl.h);
+    LineRel(-bl.w, 0);
+
+
+end;    
 
 procedure MovePlatform(var pl : platform; xmove : Shortint);
 begin
@@ -108,6 +128,12 @@ begin
             platf.x := trunc(MaxX/2-platf.w/2);
             platf.y := trunc(MaxY-platf.gap);
 
+            bl.w := 30;
+            bl.h := 100;
+            bl.color := LightBlue;
+            bl.x := trunc(MaxX/2-bl.w/2);
+            bl.y := trunc(MaxY/2+bl.h/2);
+
             repeat
 
 
@@ -119,8 +145,9 @@ begin
 
                 DrawBall(b, platf);
                 DrawPlatform(platf, platf.color);
+                Drawblock(bl);
 
-			until keycode = 27;
+			until CloseGraphRequest;
 	        CloseGraph;
         end
      else Writeln('Graphics error:', GraphErrorMsg(ErrCode));
