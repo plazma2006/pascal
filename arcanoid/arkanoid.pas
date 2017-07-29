@@ -1,7 +1,7 @@
 program arkanoid;
 
 uses
-  winCrt, wingraph;
+  WinCrt , wingraph;
 
 type
     point = record
@@ -10,12 +10,12 @@ type
     ball = record
         x, y : Integer;
         dx, dy : Shortint;
-        color, r : Byte;
+        color, r : longword;
     end;
     platform = record
         x, y : SmallInt;
         dx : Shortint;
-        color, gap : Byte; 
+        color, gap : longword; 
         w, h : Word;
     end;
     block = record
@@ -31,10 +31,8 @@ var
     b : ball;
     platf : platform;
     bl : block;
-    // ch : Char;
-    keycode : Byte;
 
-procedure DrawPlatform(var pl : platform; color : Byte);
+procedure DrawPlatform(var pl : platform; color : longword);
 begin
     { bl.x := bl.x + bl.dx;
     bl.y := bl.y + bl.dy;
@@ -75,11 +73,11 @@ begin
         
 end;
 
-procedure KeyListener(key : Byte; var pl : platform);
+procedure KeyListener(key : Char; var pl : platform);
 begin
     case key of
-        75: MovePlatform(pl, -pl.dx); //left arrow
-        77: MovePlatform(pl, pl.dx);
+        #75: MovePlatform(pl, -pl.dx); //left arrow
+        #77: MovePlatform(pl, pl.dx);
         else 
             key := key;
     end;
@@ -118,12 +116,12 @@ begin
             b.y := 2 * b.r;
             b.dy := ballstep;
             b.dx := ballstep;
-            b.color := 15;
+            b.color := LightRed;
 
             platf.w := 111;
             platf.h := 10;
             platf.gap := 15;
-            platf.color := 7;
+            platf.color := LightGreen;
             platf.dx := 39;
             platf.x := trunc(MaxX/2-platf.w/2);
             platf.y := trunc(MaxY-platf.gap);
@@ -139,9 +137,7 @@ begin
 
             	 delay(30);
 
-                if keypressed then keycode := ord(ReadKey) else keycode := 0;
-
-                if keycode > 0 then KeyListener(keycode, platf);
+                if KeyPressed then KeyListener(ReadKey, platf);
 
                 DrawBall(b, platf);
                 DrawPlatform(platf, platf.color);
