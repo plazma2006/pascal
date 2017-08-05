@@ -107,7 +107,7 @@ begin
      ErrCode := GraphResult;
      if ErrCode = grOk then
         begin
-            ballstep := 10;
+            ballstep := 15;
             MaxX := GetMaxX;
             MaxY := GetMaxY;
 
