@@ -196,6 +196,44 @@ begin
         end; 
 end;
 
+procedure DrawEnemies();
+var
+    ie : integer;
+begin
+    for ie := 1 to 100 do
+        begin
+            enemies[ie].y := enemies[ie].y + 1;
+            setcolor(enemies[ie].color);
+            
+            setcolor(0); 
+            MoveTo(trunc(enemies[ie].x), trunc(enemies[ie].y - 1));
+            LineRel(0, -10);
+            LineRel(10 ,0);
+            LineRel(0, 10);
+            LineRel(-10, 0);
+
+            setcolor(enemies[ie].color); 
+            MoveTo(trunc(enemies[ie].x), trunc(enemies[ie].y));
+            LineRel(0, -10);
+            LineRel(10 ,0);
+            LineRel(0, 10);
+            LineRel(-10, 0);
+
+
+            if enemies[ie].y >= MaxY then 
+                begin
+                    setcolor(0);
+                    MoveTo(trunc(enemies[ie].x), trunc(enemies[ie].y));
+                    LineRel(0, -10);
+                    LineRel(10 ,0);
+                    LineRel(0, 10);
+                    LineRel(-10, 0);
+                    enemies[ie].y :=0;
+                end;
+
+        end;
+end;
+
 begin
      gD := Detect;
      InitGraph(gD, gM,'');
@@ -232,17 +270,30 @@ begin
             fBullet := nil;
             lBullet := nil;
 
+            //INITIALIZE ENEMIES
+            enemies[1].color := LightRed;
+            enemies[1].x := trunc(MaxX / 2);
+            enemies[1].y := 1;
+
+            enemies[2].color := LightRed;
+            enemies[2].x := 100;
+            enemies[2].y := 1;
+            
+            enemies[3].color := LightRed;
+            enemies[3].x := trunc(MaxX / 2) + 400;
+            enemies[3].y := 1;
+
             repeat
 
             	 delay(30);
 
                 if KeyPressed then KeyListener(ReadKey, platf);
 
-                DrawBall(b, platf);
+                // DrawBall(b, platf);
                 DrawPlatform(platf, platf.color);
-                Drawblock(bl);
+                // Drawblock(bl);
                 DrawBullets();
-                //DrawEnemies(); //todo
+                DrawEnemies(); //todo
 
 			until CloseGraphRequest or isExit;
 	        CloseGraph;
