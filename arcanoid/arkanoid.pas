@@ -24,13 +24,33 @@ type
         w, h : Word
 
     end;
+    bullet = record
+        x, y : Real;
+        color : longword;
+        w, h : Word
+    end;
+    enemy = record
+        x, y : Real;
+        color : longword;
+        w, h : Word
+    end;
+    pbullet = ^bulletlist;
+    bulletlist = record
+        b : bullet;
+        prev : pbullet;
+        next : pbullet;
+    end;
 
 var
     Gd,Gm,ErrCode,MaxX, MaxY : integer;
-    ballstep : integer;
+    ballstep, nbullets : integer;
     b : ball;
     platf : platform;
     bl : block;
+    // bullets : array [1..100] of bullet;
+    fBullet, lBullet : pbullet;
+    enemies : array [1..100] of enemy;
+    isExit: Boolean;
 
 procedure DrawPlatform(var pl : platform; color : longword);
 begin
@@ -73,13 +93,47 @@ begin
         
 end;
 
+procedure FireBullet(pl : platform);
+var
+    addBullet: pbullet;    
+begin
+    writeln('Fire bullet!!!');
+
+    new(addBullet);
+
+    addBullet^.b.x := trunc(pl.x + pl.w / 2);
+    addBullet^.b.y := pl.y;
+    addBullet^.b.color := LightGreen;
+    addBullet^.b.w := 1;
+    addBullet^.b.h := 1;
+    addBullet^.prev := nil;
+    addBullet^.next := nil;
+
+    if fBullet = nil then
+        begin
+            fBullet := addBullet;
+            lBullet := addBullet
+        end
+    else
+        begin
+            addBullet^.next := fBullet;
+            fBullet^.prev := addBullet;
+            fBullet := addBullet;
+        end;
+
+
+ 
+end;
+
 procedure KeyListener(key : Char; var pl : platform);
 begin
     case key of
         #75: MovePlatform(pl, -pl.dx); //left arrow
         #77: MovePlatform(pl, pl.dx);
-        else 
-            key := key;
+        #32: FireBullet(pl);
+        #27: isExit := true;
+    else 
+        key := key;
     end;
 end;
 
@@ -97,9 +151,88 @@ begin
     if (bl.y + bl.r >= pl.y-pl.h) and (bl.x >= pl.x) and (bl.x <= pl.x + pl.w) then bl.dy := -abs(bl.dy);
 
     if (bl.x+bl.r >= MaxX) or (bl.x-bl.r <= 0) then bl.dx := bl.dx * (-1);
-    if (bl.y+bl.r >= MaxY) or (bl.y-bl.r <= 0) then bl.dy := bl.dy * (-1);
+    if (bl.y+bl.r >= MaxY) then bl.dy := -abs(bl.dy);
+    if (bl.y-bl.r <= 0) then bl.dy := abs(bl.dy);
 end;
 
+procedure DrawBullets();
+var
+    ibullet, cindex: Integer;
+    currblt : pbullet;
+begin
+    if not (fBullet = nil) then
+        begin
+            currblt := fBullet;
+            while not (currblt = nil) do
+                begin
+                    setcolor(0);
+                    circle(trunc(currblt^.b.x), trunc(currblt^.b.y), 3);
+
+                    currblt^.b.y := currblt^.b.y - 3;
+
+                    if currblt^.b.y <  0 then
+                        begin
+                            if not (currblt^.prev = nil) then
+                                begin
+                                    lBullet := currblt^.prev;
+                                    lBullet^.next := nil;
+                                    currblt^.prev := nil;
+                                end
+                            else
+                                begin
+                                    fBullet := nil;
+                                    lBullet := nil;
+                                end;
+                            Dispose(currblt);
+                            currblt := nil;
+                        end
+                    else
+                        begin
+                            setcolor(currblt^.b.color);
+                            circle(trunc(currblt^.b.x), trunc(currblt^.b.y), 3);
+                            currblt := currblt^.next;
+                        end;
+                end;
+        end; 
+end;
+
+procedure DrawEnemies();
+var
+    ie : integer;
+begin
+    for ie := 1 to 100 do
+        begin
+            enemies[ie].y := enemies[ie].y + 1;
+            setcolor(enemies[ie].color);
+            
+            setcolor(0); 
+            MoveTo(trunc(enemies[ie].x), trunc(enemies[ie].y - 1));
+            LineRel(0, -10);
+            LineRel(10 ,0);
+            LineRel(0, 10);
+            LineRel(-10, 0);
+
+            setcolor(enemies[ie].color); 
+            MoveTo(trunc(enemies[ie].x), trunc(enemies[ie].y));
+            LineRel(0, -10);
+            LineRel(10 ,0);
+            LineRel(0, 10);
+            LineRel(-10, 0);
+
+
+            if enemies[ie].y >= MaxY then 
+                begin
+                    setcolor(0);
+                    MoveTo(trunc(enemies[ie].x), trunc(enemies[ie].y));
+                    LineRel(0, -10);
+                    LineRel(10 ,0);
+                    LineRel(0, 10);
+                    LineRel(-10, 0);
+                    enemies[ie].y :=0;
+                end;
+
+        end;
+end;
 
 begin
      gD := Detect;
@@ -110,6 +243,7 @@ begin
             ballstep := 15;
             MaxX := GetMaxX;
             MaxY := GetMaxY;
+            isExit := false;
 
             b.r := 50;
             b.x := 2 * b.r;
@@ -132,18 +266,36 @@ begin
             bl.x := trunc(MaxX/2-bl.w/2);
             bl.y := trunc(MaxY/2+bl.h/2);
 
-            repeat
+            // nbullets := 0;
+            fBullet := nil;
+            lBullet := nil;
 
+            //INITIALIZE ENEMIES
+            enemies[1].color := LightRed;
+            enemies[1].x := trunc(MaxX / 2);
+            enemies[1].y := 1;
+
+            enemies[2].color := LightRed;
+            enemies[2].x := 100;
+            enemies[2].y := 1;
+            
+            enemies[3].color := LightRed;
+            enemies[3].x := trunc(MaxX / 2) + 400;
+            enemies[3].y := 1;
+
+            repeat
 
             	 delay(30);
 
                 if KeyPressed then KeyListener(ReadKey, platf);
 
-                DrawBall(b, platf);
+                // DrawBall(b, platf);
                 DrawPlatform(platf, platf.color);
-                Drawblock(bl);
+                // Drawblock(bl);
+                DrawBullets();
+                DrawEnemies(); //todo
 
-			until CloseGraphRequest;
+			until CloseGraphRequest or isExit;
 	        CloseGraph;
         end
      else Writeln('Graphics error:', GraphErrorMsg(ErrCode));
