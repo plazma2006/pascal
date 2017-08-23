@@ -14,7 +14,7 @@ type
     end;
     platform = record
         x, y : SmallInt;
-        dx : Shortint;
+        dx, speedstep : Shortint;
         color, gap : longword; 
         w, h : Word;
     end;
@@ -27,7 +27,8 @@ type
     bullet = record
         x, y : Real;
         color : longword;
-        w, h : Word
+        w, h : Word;
+        r : Word;
     end;
     enemy = record
         x, y : Real;
@@ -50,15 +51,22 @@ var
     // bullets : array [1..100] of bullet;
     fBullet, lBullet : pbullet;
     enemies : array [1..100] of enemy;
+    nenemies : Byte;
     isExit: Boolean;
+
+procedure DrawEnemy(color : longword; en : enemy);
+begin
+    setcolor(color); 
+    MoveTo(trunc(en.x), trunc(en.y));
+    LineRel(0, -en.h);
+    LineRel(en.w ,0);
+    LineRel(0, en.h);
+    LineRel(-en.w, 0);
+
+end;
 
 procedure DrawPlatform(var pl : platform; color : longword);
 begin
-    { bl.x := bl.x + bl.dx;
-    bl.y := bl.y + bl.dy;
-
-    setcolor(0);
-    circle(bl.x-bl.dx, bl.y-bl.dy, bl.r); }
 
     setcolor(color);
     MoveTo(pl.x, pl.y);
@@ -69,26 +77,26 @@ begin
 
 end;
 
-procedure Drawblock(var bl : block);
+procedure MovePlatform(var pl : platform; direction : Shortint);
 begin
+    // idea: if direction same - increase
+    // if direction opposite - stop and don't erase previous platform
+    case direction of
+        -1: begin
+            if pl.dx <= 0 then pl.dx := pl.dx - pl.speedstep
+            else pl.dx := 0;
+        end;
+        1: begin
+            if pl.dx >= 0 then pl.dx := pl.dx + pl.speedstep
+            else pl.dx := 0;
+        end;
+    end;
 
-    setcolor(bl.color);
-    MoveTo(bl.x, bl.y);
-    LineRel(0, -bl.h);
-    LineRel(bl.w ,0);
-    LineRel(0, bl.h);
-    LineRel(-bl.w, 0);
 
-
-end;    
-
-procedure MovePlatform(var pl : platform; xmove : Shortint);
-begin
-
-    if (pl.x+xmove >= 0) and (pl.x+pl.w+xmove <= MaxX) then 
+    if (pl.x+pl.dx >= 0) and (pl.x+pl.w+pl.dx <= MaxX) then 
         begin
-            DrawPlatform(pl, 0);
-            pl.x := pl.x + xmove;
+            if not (pl.dx = 0) then DrawPlatform(pl, 0);
+            pl.x := pl.x + pl.dx;
         end;
         
 end;
@@ -97,7 +105,9 @@ procedure FireBullet(pl : platform);
 var
     addBullet: pbullet;    
 begin
-    writeln('Fire bullet!!!');
+
+    //звук выстрела
+    Sound(520, 30);        { Звук с частотой 520 Гц, на 30 миллисекунд }
 
     new(addBullet);
 
@@ -106,6 +116,7 @@ begin
     addBullet^.b.color := LightGreen;
     addBullet^.b.w := 1;
     addBullet^.b.h := 1;
+    addBullet^.b.r := 3;
     addBullet^.prev := nil;
     addBullet^.next := nil;
 
@@ -128,8 +139,8 @@ end;
 procedure KeyListener(key : Char; var pl : platform);
 begin
     case key of
-        #75: MovePlatform(pl, -pl.dx); //left arrow
-        #77: MovePlatform(pl, pl.dx);
+        #75: MovePlatform(pl, -1); //left arrow
+        #77: MovePlatform(pl, 1); //right arrow
         #32: FireBullet(pl);
         #27: isExit := true;
     else 
@@ -155,10 +166,28 @@ begin
     if (bl.y-bl.r <= 0) then bl.dy := abs(bl.dy);
 end;
 
+procedure KillBullet(var currblt : pbullet);
+begin
+    if not (currblt^.prev = nil) then
+        begin
+            lBullet := currblt^.prev;
+            lBullet^.next := nil;
+            currblt^.prev := nil;
+        end
+    else
+        begin
+            fBullet := nil;
+            lBullet := nil;
+        end;
+    Dispose(currblt);
+    currblt := nil;
+end;
+
 procedure DrawBullets();
 var
     ibullet, cindex: Integer;
     currblt : pbullet;
+    ienem : integer;
 begin
     if not (fBullet = nil) then
         begin
@@ -170,26 +199,32 @@ begin
 
                     currblt^.b.y := currblt^.b.y - 3;
 
+                    //check if any enemy here
+                    for ienem := 1 to nenemies do
+                        begin
+                            //enemy starts to draw from left bottom corner
+                            if (currblt^.b.y - currblt^.b.r < enemies[ienem].y) and (currblt^.b.y + currblt^.b.r > enemies[ienem].y - enemies[ienem].h) then
+                                begin
+                                    // if bullet hurts enemy then throw enemy back to top of the screen
+                                    if (currblt^.b.x + currblt^.b.r > enemies[ienem].x) and (currblt^.b.x - currblt^.b.r < enemies[ienem].x + enemies[ienem].w) then
+                                        begin
+                                            //звук попадания во врага
+                                            Sound(220, 100);        { Звук с частотой 220 Гц, на 100 миллисекунд }
+                                            DrawEnemy(0, enemies[ienem]);
+                                            enemies[ienem].x := random(MaxX - platf.w) + platf.w / 2;
+                                            enemies[ienem].y := 0;
+                                        end;
+                                end;
+                        end;
+
                     if currblt^.b.y <  0 then
                         begin
-                            if not (currblt^.prev = nil) then
-                                begin
-                                    lBullet := currblt^.prev;
-                                    lBullet^.next := nil;
-                                    currblt^.prev := nil;
-                                end
-                            else
-                                begin
-                                    fBullet := nil;
-                                    lBullet := nil;
-                                end;
-                            Dispose(currblt);
-                            currblt := nil;
+                            KillBullet(currblt);
                         end
                     else
                         begin
                             setcolor(currblt^.b.color);
-                            circle(trunc(currblt^.b.x), trunc(currblt^.b.y), 3);
+                            circle(trunc(currblt^.b.x), trunc(currblt^.b.y), currblt^.b.r);
                             currblt := currblt^.next;
                         end;
                 end;
@@ -199,36 +234,20 @@ end;
 procedure DrawEnemies();
 var
     ie : integer;
+    prevEnemy : enemy;
 begin
-    for ie := 1 to 100 do
+    for ie := 1 to nenemies do
         begin
+            prevEnemy := enemies[ie];
             enemies[ie].y := enemies[ie].y + 1;
-            setcolor(enemies[ie].color);
             
-            setcolor(0); 
-            MoveTo(trunc(enemies[ie].x), trunc(enemies[ie].y - 1));
-            LineRel(0, -10);
-            LineRel(10 ,0);
-            LineRel(0, 10);
-            LineRel(-10, 0);
+            DrawEnemy(0, prevEnemy);
+            DrawEnemy(enemies[ie].color, enemies[ie]);
 
-            setcolor(enemies[ie].color); 
-            MoveTo(trunc(enemies[ie].x), trunc(enemies[ie].y));
-            LineRel(0, -10);
-            LineRel(10 ,0);
-            LineRel(0, 10);
-            LineRel(-10, 0);
-
-
-            if enemies[ie].y >= MaxY then 
+            if enemies[ie].y >= MaxY then
                 begin
-                    setcolor(0);
-                    MoveTo(trunc(enemies[ie].x), trunc(enemies[ie].y));
-                    LineRel(0, -10);
-                    LineRel(10 ,0);
-                    LineRel(0, 10);
-                    LineRel(-10, 0);
-                    enemies[ie].y :=0;
+                    DrawEnemy(0, enemies[ie]);
+                    enemies[ie].y := 0;
                 end;
 
         end;
@@ -256,7 +275,8 @@ begin
             platf.h := 10;
             platf.gap := 15;
             platf.color := LightGreen;
-            platf.dx := 39;
+            platf.dx := 9;
+            platf.speedstep := 3;
             platf.x := trunc(MaxX/2-platf.w/2);
             platf.y := trunc(MaxY-platf.gap);
 
@@ -274,14 +294,22 @@ begin
             enemies[1].color := LightRed;
             enemies[1].x := trunc(MaxX / 2);
             enemies[1].y := 1;
+            enemies[1].w := 10;
+            enemies[1].h := 10;
 
             enemies[2].color := LightRed;
             enemies[2].x := 100;
             enemies[2].y := 1;
+            enemies[2].w := 10;
+            enemies[2].h := 10;
             
             enemies[3].color := LightRed;
             enemies[3].x := trunc(MaxX / 2) + 400;
             enemies[3].y := 1;
+            enemies[3].w := 10;
+            enemies[3].h := 10;
+
+            nenemies := 3;
 
             repeat
 
