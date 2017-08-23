@@ -294,22 +294,27 @@ begin
             enemies[1].color := LightRed;
             enemies[1].x := trunc(MaxX / 2);
             enemies[1].y := 1;
-            enemies[1].w := 10;
-            enemies[1].h := 10;
+            enemies[1].w := 130;
+            enemies[1].h := 30;
 
-            enemies[2].color := LightRed;
+            enemies[2] := enemies[1];
             enemies[2].x := 100;
-            enemies[2].y := 1;
-            enemies[2].w := 10;
-            enemies[2].h := 10;
-            
-            enemies[3].color := LightRed;
+           
+            enemies[3] := enemies[1];
             enemies[3].x := trunc(MaxX / 2) + 400;
-            enemies[3].y := 1;
-            enemies[3].w := 10;
-            enemies[3].h := 10;
+            
+            enemies[4] := enemies[1];
+            enemies[4].x := trunc(MaxY / 2) + 10;
+            enemies[4].y := 100;
 
-            nenemies := 3;
+            enemies[5] := enemies[1];
+            enemies[5].x := trunc(MaxX / 2) + 200;
+            enemies[5].y := 100;
+
+            enemies[6] := enemies[1];
+            enemies[6].y := 150;
+
+            nenemies := 6;
 
             repeat
 
